@@ -1,6 +1,6 @@
 # Tool Tách Chương Truyện
 
-![Giao diện Tool](https://via.placeholder.com/600x400.png?text=Giao+diện+Tool+Tách+Chương)  
+![Giao diện Tool]([https://via.placeholder.com/600x400.png?text=Giao+diện+Tool+Tách+Chương](https://i.pinimg.com/736x/9f/68/9c/9f689c8d1e3c0b1b74170828fa2b393a.jpg))  
 
 **Tool Tách Chương Truyện** là một ứng dụng desktop được viết bằng Python, sử dụng giao diện `customtkinter`, 
 giúp tách các chương từ file truyện dạng `.txt` (đặc biệt là truyện convert tiếng Trung) thành các file riêng biệt. 

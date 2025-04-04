@@ -8,16 +8,14 @@ class ChapterSplitterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Tool Tách Chương")
-        self.root.geometry("600x400")
+        self.root.geometry("600x500")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
-        # Biến lưu trữ
         self.input_file = ""
         self.output_dir = ""
-        self.pattern = r"Chương\s+\d+:"
+        self.pattern = r"#\d+.*?"
 
-        # Tạo giao diện
         self.create_widgets()
 
     def create_widgets(self):
@@ -40,8 +38,11 @@ class ChapterSplitterApp:
         pattern_label = ctk.CTkLabel(frame, text="Pattern tách chương:")
         pattern_label.pack(pady=5)
         self.pattern_entry = ctk.CTkEntry(frame, width=300)
-        self.pattern_entry.insert(0, "Chương\s+\d+:")
+        self.pattern_entry.insert(0, "#\\d+.*?")
         self.pattern_entry.pack(pady=5)
+
+        suggest_btn = ctk.CTkButton(frame, text="Gợi ý Regex", command=self.suggest_regex)
+        suggest_btn.pack(pady=5)
 
         run_btn = ctk.CTkButton(frame, text="Tách Chương", command=self.split_chapters, fg_color="#28a745", hover_color="#218838")
         run_btn.pack(pady=20)
@@ -61,6 +62,38 @@ class ChapterSplitterApp:
         else:
             self.output_dir = "output"
 
+    def suggest_regex(self):
+        if not self.input_file:
+            messagebox.showwarning("Cảnh báo", "Vui lòng chọn file txt trước!")
+            return
+
+        try:
+            with open(self.input_file, 'r', encoding='utf-8') as file:
+                content = file.read(1000)  # Đọc 1000 ký tự đầu để phân tích
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Không thể đọc file: {str(e)}")
+            return
+
+        # Gợi ý regex dựa trên nội dung
+        patterns = [
+            r"#\d+.*?",           # Dạng #1, #2,...
+            r"Chương\s+\d+:.*?",  # Dạng Chương 1:, Chương 2:,...
+            r"第\d+章.*?"          # Dạng tiếng Trung 第1章
+        ]
+        suggested_pattern = None
+
+        for pattern in patterns:
+            if re.search(pattern, content, re.MULTILINE):
+                suggested_pattern = pattern
+                break
+
+        if suggested_pattern:
+            self.pattern_entry.delete(0, ctk.END)
+            self.pattern_entry.insert(0, suggested_pattern.replace(".*?", ".*?"))
+            self.status_label.configure(text=f"Đã gợi ý: {suggested_pattern}")
+        else:
+            self.status_label.configure(text="Không tìm thấy pattern phù hợp, thử nhập tay!")
+
     def split_chapters(self):
         if not self.input_file:
             messagebox.showerror("Lỗi", "Vui lòng chọn file txt!")
@@ -68,11 +101,10 @@ class ChapterSplitterApp:
         if not self.output_dir:
             self.output_dir = "output"
 
-        self.pattern = self.pattern_entry.get() or r"Chương\s+\d+:"
+        self.pattern = self.pattern_entry.get() or r"#\d+.*?"
         try:
             Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
-            # Đọc file
             try:
                 with open(self.input_file, 'r', encoding='utf-8') as file:
                     content = file.read()
@@ -84,8 +116,7 @@ class ChapterSplitterApp:
                 with open(self.input_file, 'r', encoding=encoding) as file:
                     content = file.read()
 
-            # Tách nội dung thành các phần dựa trên pattern
-            parts = re.split(f"({self.pattern}.*?)(?=\n|$)", content, flags=re.MULTILINE)
+            parts = re.split(f"({self.pattern})(?=\n|$)", content, flags=re.MULTILINE)
             chapters = []
             intro_content = ""
 
@@ -93,20 +124,16 @@ class ChapterSplitterApp:
                 part = parts[i].strip()
                 if part:
                     if re.match(self.pattern, part):
-                        # Đây là tiêu đề chương
                         chapter_title = part
-                        # Lấy nội dung chương từ phần tiếp theo
                         if i + 1 < len(parts):
                             chapter_content = parts[i + 1].strip()
                             chapters.append({"title": chapter_title, "content": chapter_content})
-                    elif not chapters:  # Phần trước chương 1 là phần giới thiệu
+                    elif not chapters:
                         intro_content = part
 
-            # Lưu phần giới thiệu (nếu có)
             if intro_content:
                 self.save_intro(intro_content)
 
-            # Lưu các chương
             for idx, chapter in enumerate(chapters):
                 self.save_chapter(chapter, idx)
 
